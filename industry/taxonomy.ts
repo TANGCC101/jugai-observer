@@ -12,6 +12,10 @@
  * feedLabel 是分类 RSS 标题里的名字（不写就用 label）。公开接口、RSS 和 MCP 里要把一类并进另一类发布，写在站点设置里（site/site.ts 的 PUBLIC_CATEGORIES）。
  */
 export const CATEGORIES = [
+  { key: "style", tagColor: "green", label: "风格偏好", section: "装修消费洞察", guide: "精装局改、软装、收纳、灯光与风格需求的样本研究和案例。保留城市、样本和方法；设计师作品不等于消费者偏好。" },
+  { key: "design-fees", tagColor: "orange", label: "设计服务费", section: "装修消费洞察", guide: "设计费报价、预算自述、接受或拒绝报价、成交与服务包边界。明确币种、单位、城市、交付和修改次数；施工总价、材料与设计费不可混用。" },
+  { key: "content-performance", tagColor: "turquoise", label: "内容表现", section: "装修消费洞察", guide: "小红书装修笔记互动、阅读与自有后台停留数据；必须有时间窗口、分母与证据。互动是代理信号，不可推导停留或购买。" },
+  { key: "ai-design", tagColor: "violet", label: "AI×设计", section: "AI与室内设计", guide: "AI在户型、局改方案、效果图、材料清单、软装搭配和获客内容中的实际应用。应用实测、国内工具与工作流优先；泛AI发布归模型或产品。" },
   { key: "ai-models", tagColor: "indigo", label: "模型", feedLabel: "AI 模型", section: "模型发布/更新", guide: "模型本身的发布、版本、权重开放、能力或价格变化，以及既有榜单上的模型成绩。公布一次跑分不是发布新基准，也不是教程。" },
   { key: "ai-products", tagColor: "turquoise", label: "产品", feedLabel: "AI 产品", section: "产品发布/更新", guide: "可使用的 AI 产品、功能、应用、工具、API、平台和工程组件的发布更新。模型厂商发布的推理框架、算子库、硬件适配组件仍是产品，不能因为厂商名归成模型。" },
   { key: "industry", tagColor: "orange", label: "行业", feedLabel: "行业动态", section: "行业动态", guide: "已发生的公司经营、融资并购、人事、合作、诉讼、政策、真实安全事故及调查进展。新闻由当事人发帖、带有态度，也不因此变成观点。" },
@@ -41,19 +45,20 @@ export const ITEM_TYPES = ["model_release", "product_launch", "tool_or_prompt", 
 /** 每篇资料的第一个标签必须是这些“分类标签”之一。 */
 export const CATEGORY_TAGS = [
   "产品更新", "模型发布", "论文/研究", "开源/仓库", "教程/实践", "现象/趋势", "大佬观点", "评测/基准", "安全/对齐", "行业动态", "政策/监管",
-  "非AI/通用工具", "其他",
+  "非AI/通用工具", "风格样本", "价格证据", "内容观察", "AI设计实践", "其他",
 ] as const;
 
 /** 可选的主题标签。 */
 export const TOPIC_TAGS = [
-  "Agent", "编码", "推理", "多模态", "语音", "视频", "图像生成", "RAG", "端侧", "数据/训练", "搜索", "部署/工程", "开源生态", "具身智能", "MCP/工具调用",
+  "精装局改", "软装", "收纳", "灯光", "原木风", "中古风", "奶油风", "现代简约", "设计服务费", "报价", "预算自述", "成交", "小红书", "互动指标", "停留数据", "样本研究", "AI设计", "户型", "效果图", "国内设计资讯", "微信公众号", "设计论坛", "Agent", "编码", "推理", "多模态", "语音", "视频", "图像生成", "RAG", "端侧", "数据/训练", "搜索", "部署/工程", "开源生态", "具身智能", "MCP/工具调用",
 ] as const;
 
 /** 可选的实体标签（公司、机构、平台）。 */
-export const ENTITY_TAGS = ["OpenAI", "Anthropic", "DeepSeek", "DeepMind", "Google", "Meta", "Microsoft", "xAI", "Hugging Face", "GitHub", "arXiv"] as const;
+export const ENTITY_TAGS = ["OpenAI", "Anthropic", "DeepSeek", "DeepMind", "Google", "Meta", "Microsoft", "xAI", "Hugging Face", "GitHub", "arXiv", "酷家乐", "三维家", "小红书", "站酷", "设计本"] as const;
 
 /** 模型常写的近义词，统一成词表里的写法。 */
 export const TAG_SYNONYMS: Readonly<Record<string, string>> = {
+  局改: "精装局改", 精装房改造: "精装局改", 设计费: "设计服务费", ai设计: "AI设计", 互动率: "互动指标",
   "教程/玩法": "教程/实践", "技巧/最佳实践": "教程/实践", "合作/生态": "行业动态", "融资/收购": "行业动态", "公司动态": "行业动态",
   合作: "行业动态", 生态: "行业动态", 融资: "行业动态", 收购: "行业动态", 投资: "行业动态", 并购: "行业动态",
   政策: "政策/监管", 监管: "政策/监管", 法规: "政策/监管", 安全: "安全/对齐", 对齐: "安全/对齐",
@@ -74,6 +79,11 @@ export const TAG_SYNONYMS: Readonly<Record<string, string>> = {
  * 所有这些名字都用来认出说的是哪家公司，比如把事实的主体对到发布方。
  */
 export const ENTITIES: Record<string, { name: string; displayTag: string | null; aliases: string[]; orgNames?: string[]; otherNames?: string[] }> = {
+  kujiale: { name: "酷家乐", displayTag: "酷家乐", aliases: ["酷家乐", "群核科技", "Manycore"], orgNames: ["酷家乐", "群核科技"] },
+  sanweijia: { name: "三维家", displayTag: "三维家", aliases: ["三维家"], orgNames: ["三维家"] },
+  xiaohongshu: { name: "小红书", displayTag: "小红书", aliases: ["小红书", "REDnote", "Xiaohongshu"] },
+  zcool: { name: "站酷", displayTag: "站酷", aliases: ["站酷", "ZCOOL"] },
+  shejiben: { name: "设计本", displayTag: "设计本", aliases: ["设计本", "Designbook"] },
   "world-labs": { name: "World Labs", displayTag: null, aliases: ["World Labs"] },
   "thinking-machines": { name: "Thinking Machines Lab", displayTag: null, aliases: ["Thinking Machines"] },
   amd: { name: "AMD", displayTag: null, aliases: ["AMD", "Advanced Micro Devices"] },
@@ -99,6 +109,11 @@ export const ENTITIES: Record<string, { name: string; displayTag: string | null;
  * 行业没有这个问题时可以留空数组。
  */
 export const IDENTITY_LEXICON: ReadonlyArray<{ id: string; name: string; patterns: RegExp[] }> = [
+  { id: "kujiale", name: "酷家乐", patterns: [/酷家乐|群核科技|manycore/i] },
+  { id: "sanweijia", name: "三维家", patterns: [/三维家/] },
+  { id: "xiaohongshu", name: "小红书", patterns: [/小红书|xiaohongshu|rednote/i] },
+  { id: "zcool", name: "站酷", patterns: [/站酷|zcool/i] },
+  { id: "shejiben", name: "设计本", patterns: [/设计本|shejiben|designbook/i] },
   { id: "openai", name: "OpenAI", patterns: [/openai|chatgpt|\bgpt-?[o\d]|\bsora\b|\bcodex\b/i] },
   { id: "anthropic", name: "Anthropic", patterns: [/anthropic|\bclaude\b/i, /\b(?:opus|sonnet|haiku)\s*\d+(?:[.\-]\d+)*\b/i, /\bfable\s*\d+(?:[.\-]\d+)*\b|\bmythos\b/i] },
   { id: "google", name: "Google / Gemini", patterns: [/google|deepmind|\bgemini\b|notebooklm|\bveo\s?\d|\bAlphaFold\b|\bAMIE\b/i] },
@@ -135,6 +150,8 @@ export const IDENTITY_LEXICON: ReadonlyArray<{ id: string; name: string; pattern
 
 /** 这些域名上的文章，发布方就是对应的公司（托管平台如 GitHub、arXiv 不算）。 */
 export const PUBLISHER_DOMAINS: ReadonlyArray<{ entityId: string; domains: readonly string[] }> = [
+  { entityId: "kujiale", domains: ["kujiale.com"] },
+  { entityId: "sanweijia", domains: ["3vjia.com"] },
   { entityId: "openai", domains: ["openai.com"] },
   { entityId: "anthropic", domains: ["anthropic.com", "claude.com"] },
   { entityId: "google", domains: ["deepmind.google", "ai.google", "blog.google"] },

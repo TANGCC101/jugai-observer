@@ -1,3 +1,5 @@
+> 本分支是「局改观察」定制版，面向独立精装局改设计师。新增消费洞察 `/insights` 与来源说明 `/sources-guide`；详见 [使用与运营](docs/design-insights.md)。开发默认关闭采集与模型调用，暂无真实私人样本。以下保留上游框架说明。
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner-dark.png">

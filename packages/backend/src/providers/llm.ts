@@ -115,6 +115,46 @@ function isConnectFailure(error: unknown): boolean {
   return ["ECONNREFUSED", "ENOTFOUND", "EAI_AGAIN", "UND_ERR_CONNECT_TIMEOUT", "CERT_HAS_EXPIRED"].includes(code ?? "");
 }
 
+/** Gateways may force SSE even for a non-stream request. Keep the final usage-only event. */
+function completionFromStream(text: string): Record<string, unknown> {
+  const events = text.split(/\r?\n\r?\n/).map((event) => event.split(/\r?\n/)
+    .filter((line) => line.startsWith("data:")).map((line) => line.slice(5).replace(/^ /, "")).join("\n")).filter(Boolean);
+  // A clean HTTP EOF is not proof the upstream finished: never reuse a truncated paid answer.
+  if (events.at(-1) !== "[DONE]") throw new Error("Model stream ended before [DONE]; outcome unknown");
+  let content = "";
+  let finishReason: string | null = null;
+  let usage: unknown = null;
+  let id: unknown;
+  let model: unknown;
+  try {
+    for (const event of events.slice(0, -1)) {
+      const chunk = JSON.parse(event) as {
+        id?: string; model?: string; error?: unknown; usage?: unknown;
+        choices?: Array<{ index: number; delta?: { content?: string | null }; finish_reason?: string | null }>;
+      };
+      if (!chunk || typeof chunk !== "object" || chunk.error) throw new Error("Invalid model stream event");
+      id = chunk.id ?? id;
+      model = chunk.model ?? model;
+      usage = chunk.usage ?? usage;
+      for (const choice of chunk.choices ?? []) {
+        if (choice.index !== 0) continue;
+        const part = choice.delta?.content;
+        if (part !== undefined && part !== null && typeof part !== "string") throw new Error("Invalid model content");
+        content += part ?? "";
+        finishReason = choice.finish_reason || finishReason;
+      }
+    }
+    if (!finishReason) throw new Error("Model stream has no finish reason");
+    // A parseable JSON prefix can still be truncated or filtered. Retain its paid usage, not its answer.
+    if (finishReason !== "stop") return {
+      id, model, choices: [{ message: { content: "" }, finish_reason: finishReason }], usage, unparsable: text.slice(0, 20000),
+    };
+    return { id, model, choices: [{ message: { content }, finish_reason: finishReason }], usage };
+  } catch {
+    return { unparsable: text.slice(0, 20000) };
+  }
+}
+
 function requestFor<S extends z.ZodType>(opts: ChatJsonOptions<S>, spec: ModelSpec) {
   const temperature = opts.temperature ?? 0.2;
   const maxTokens = Math.max(opts.maxTokens ?? 1500, 512) + (spec.reasoningTokens ?? 0);
@@ -208,7 +248,9 @@ async function chatOnce<S extends z.ZodType>(opts: ChatJsonOptions<S>, circuit =
       }
       if (circuit) await recordModelHealth(spec.service, permit!, false);
       let json: Record<string, unknown>;
-      try {
+      if (res.headers.get("content-type")?.toLowerCase().startsWith("text/event-stream")) {
+        json = completionFromStream(text);
+      } else try {
         json = JSON.parse(text);
         if (!json || typeof json !== "object" || Array.isArray(json)) throw new Error("Expected a response object");
       } catch {
@@ -229,6 +271,8 @@ async function chatOnce<S extends z.ZodType>(opts: ChatJsonOptions<S>, circuit =
   const content = response.choices?.[0]?.message?.content ?? "";
   let parsed: z.infer<S>;
   try {
+    // Custom text parsers may accept empty strings; a rejected wire response must never reach them.
+    if ("unparsable" in response) throw new Error("Unusable model response");
     parsed = opts.schema.parse(opts.parse ? opts.parse(content) : extractJson(content));
   } catch (error) {
     // Unusable output: record it and let a later attempt pay for a fresh answer. A reasoning model that

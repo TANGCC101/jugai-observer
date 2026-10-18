@@ -2,21 +2,111 @@
   "groups": [
     {
       "key": "company",
-      "name": "公司与模型",
-      "blurb": "按厂商追踪模型、产品与公司动态"
+      "name": "平台与厂商",
+      "blurb": "设计工具、内容平台与AI厂商的原始发布"
     },
     {
       "key": "field",
-      "name": "技术方向",
-      "blurb": "按技术领域深挖：Agent、多模态、具身智能……"
+      "name": "设计师关心的方向",
+      "blurb": "精装局改、设计服务费、装修内容与AI工作流"
     },
     {
       "key": "genre",
-      "name": "内容类型",
-      "blurb": "按体裁浏览：论文、教程、观点、政策……"
+      "name": "资料类型",
+      "blurb": "案例、研究、方法与观点；结论需回到原始证据"
     }
   ],
   "topics": [
+    {
+      "slug": "partial-renovation",
+      "name": "精装局改",
+      "group": "field",
+      "tags": [
+        "精装局改"
+      ],
+      "definition": "保留可用硬装的局部改造、灯光、收纳与软装方案。"
+    },
+    {
+      "slug": "style-evidence",
+      "name": "装修风格偏好",
+      "group": "field",
+      "tags": [
+        "风格样本",
+        "原木风",
+        "中古风",
+        "奶油风",
+        "现代简约"
+      ],
+      "definition": "区分案例展示与有采样说明的消费者偏好研究。"
+    },
+    {
+      "slug": "design-fees",
+      "name": "设计服务费",
+      "group": "field",
+      "tags": [
+        "设计服务费",
+        "价格证据"
+      ],
+      "definition": "分清报价、预算自述、接受与拒绝报价、实际支付，不把施工预算当设计费。"
+    },
+    {
+      "slug": "note-performance",
+      "name": "小红书内容表现",
+      "group": "field",
+      "tags": [
+        "小红书",
+        "互动指标",
+        "停留数据"
+      ],
+      "definition": "公开互动与自有后台停留分别记录，缺失保持未知。"
+    },
+    {
+      "slug": "ai-interior",
+      "name": "AI×室内设计",
+      "group": "field",
+      "tags": [
+        "AI设计",
+        "户型",
+        "效果图",
+        "国内设计资讯"
+      ],
+      "definition": "AI出图、户型与局改工作流，宣传效果与独立实测分别表达。"
+    },
+    {
+      "slug": "kujiale",
+      "name": "酷家乐",
+      "group": "company",
+      "entityId": "kujiale",
+      "definition": "酷家乐的官方发布及相关实测，来源声称不自动等于独立验证。"
+    },
+    {
+      "slug": "sanweijia",
+      "name": "三维家",
+      "group": "company",
+      "entityId": "sanweijia",
+      "definition": "三维家的官方发布及相关实测，来源声称不自动等于独立验证。"
+    },
+    {
+      "slug": "xiaohongshu",
+      "name": "小红书",
+      "group": "company",
+      "entityId": "xiaohongshu",
+      "definition": "小红书的官方发布及相关实测，来源声称不自动等于独立验证。"
+    },
+    {
+      "slug": "zcool",
+      "name": "站酷",
+      "group": "company",
+      "entityId": "zcool",
+      "definition": "站酷的官方发布及相关实测，来源声称不自动等于独立验证。"
+    },
+    {
+      "slug": "shejiben",
+      "name": "设计本",
+      "group": "company",
+      "entityId": "shejiben",
+      "definition": "设计本的官方发布及相关实测，来源声称不自动等于独立验证。"
+    },
     {
       "slug": "openai",
       "name": "OpenAI / ChatGPT",
