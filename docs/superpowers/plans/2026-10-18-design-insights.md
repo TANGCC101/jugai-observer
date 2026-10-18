@@ -55,4 +55,4 @@
 - [x] 增加内存导入、筛选、统计表、价格证据表与空模板下载；来源目录与首页三线导航。
 - [x] 执行 npm run typecheck、npm test、npm run build -w @aihot/web、node --test apps/web/tests/*.test.ts。
 - [x] 启动本机无采集站，运行 node scripts/smoke.ts，浏览器验收新增页面及移动导航。
-- [ ] 检查差异、提交独立分支、推送并创建草稿 PR；汇报真实检查结果与待定项。（本地验证已完成；新Fork已创建，用户已同意仅授权该仓库，GitHub安装流程要求邮箱身份验证。远端分支与PR待授权完成后创建。）
+- [x] 检查差异、提交独立分支、发布并创建草稿 PR；验证和待定项见 docs/validation.md 与 docs/design-insights.md。草稿：https://github.com/TANGCC101/jugai-observer/pull/1 ，未合并main。
