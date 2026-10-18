@@ -3,6 +3,7 @@
 // answer cut off at the output limit says so, and the valve stops calls before they are sent.
 import { gate, stub, tag } from "./setup.ts";
 import assert from "node:assert/strict";
+import { createServer } from "node:http";
 import { after, test } from "node:test";
 import { z } from "zod";
 import { config } from "@aihot/backend/config";
@@ -18,8 +19,8 @@ const provider = await stub((hit) => ({ id: `stub-${hit}`, choices: [{ message: 
 process.env.DEEPSEEK_BASE_URL = `${provider.url}/v1`;
 process.env.DEEPSEEK_API_KEY = "test-key";
 
-const ask = (subject: string) =>
-  chatJson({ model: "deepseek-flash", purpose: "invariant_test", subject, promptVersion: "t1", system: "s", user: `input ${subject}`, schema: z.object({ ok: z.boolean() }) });
+const ask = (subject: string, parse?: (text: string) => unknown) =>
+  chatJson({ model: "deepseek-flash", purpose: "invariant_test", subject, promptVersion: "t1", system: "s", user: `input ${subject}`, schema: z.object({ ok: z.boolean() }), parse });
 
 after(async () => {
   await provider.close();
@@ -173,6 +174,79 @@ test("an answer cut off at the output limit is a failed paid answer that says so
   } finally {
     process.env.DEEPSEEK_BASE_URL = original;
     await cut.close();
+  }
+});
+
+// Some gateways answer a non-stream request with SSE. These exercise the real HTTP/receipt boundary.
+async function streamedAnswer(events: string, run: () => Promise<void>) {
+  const server = createServer((_req, res) => {
+    res.writeHead(200, { "content-type": "text/event-stream; charset=utf-8" });
+    const bytes = Buffer.from(events);
+    res.write(bytes.subarray(0, 23));
+    res.end(bytes.subarray(23));
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const original = process.env.DEEPSEEK_BASE_URL;
+  process.env.DEEPSEEK_BASE_URL = `http://127.0.0.1:${(server.address() as { port: number }).port}/v1`;
+  try { await run(); } finally {
+    process.env.DEEPSEEK_BASE_URL = original;
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
+}
+const sse = (value: unknown) => `data: ${JSON.stringify(value)}\r\n\r\n`;
+
+test("SSE answers preserve assembled content, trailing usage and receipt reuse", async () => {
+  const subject = `sse-${tag()}`;
+  const events = ": heartbeat\r\n\r\n"
+    + sse({ id: "stream-1", model: "gateway-model", choices: [{ index: 0, delta: { content: '{"ok":' } }] })
+    + sse({ choices: [{ index: 0, delta: { content: "true}" }, finish_reason: "stop" }] })
+    + sse({ choices: [], usage }) + "data: [DONE]\r\n\r\n";
+  await streamedAnswer(events, async () => {
+    const result = await ask(subject);
+    assert.deepEqual(result.data, { ok: true });
+    assert.deepEqual(result.usage, usage);
+    const again = await ask(subject);
+    assert.equal(again.reused, true);
+    assert.equal(again.receiptId, result.receiptId);
+    const [attempt] = await sql`SELECT usage FROM receipt_attempts WHERE receipt_id=${result.receiptId}`;
+    assert.deepEqual(attempt!.usage, usage);
+  });
+});
+
+test("an SSE disconnect never accepts a partial answer or silently pays for it again", async () => {
+  const subject = `sse-disconnect-${tag()}`;
+  const events = sse({ choices: [{ index: 0, delta: { content: '{"ok":true}' }, finish_reason: "stop" }] });
+  await streamedAnswer(events, async () => {
+    await assert.rejects(ask(subject), ReceiptUnknownError);
+    await assert.rejects(ask(subject), ReceiptUnknownError);
+    const [receipt] = await sql`SELECT status, attempts FROM receipts WHERE subject=${subject}`;
+    assert.equal(receipt!.status, "unknown");
+    assert.equal(receipt!.attempts, 1);
+  });
+});
+
+test("custom parsers cannot turn malformed or error SSE events into valid model answers", async () => {
+  for (const bad of ["data: {broken}\n\n", sse({ error: { message: "upstream failed" } })]) {
+    const subject = `sse-invalid-${tag()}`;
+    await streamedAnswer(sse({ choices: [{ index: 0, delta: { content: '{"ok":true}' }, finish_reason: "stop" }] })
+      + bad + "data: [DONE]\n\n", async () => {
+      await assert.rejects(ask(subject, () => ({ ok: true })), ModelOutputError);
+      const [receipt] = await sql`SELECT status FROM receipts WHERE subject=${subject}`;
+      assert.equal(receipt!.status, "failed");
+    });
+  }
+});
+
+test("SSE output limits and filtering reject even schema-valid partial text and retain usage", async () => {
+  for (const reason of ["length", "content_filter"]) {
+    const subject = `sse-cut-${tag()}`;
+    await streamedAnswer(sse({ choices: [{ index: 0, delta: { content: '{"ok":true}' }, finish_reason: reason }] })
+      + sse({ choices: [], usage }) + "data: [DONE]\n\n", async () => {
+      await assert.rejects(ask(subject, () => ({ ok: true })), ModelOutputError);
+      const [receipt] = await sql`SELECT status, response FROM receipts WHERE subject=${subject}`;
+      assert.equal(receipt!.status, "failed");
+      assert.deepEqual(receipt!.response.usage, usage);
+    });
   }
 });
 
